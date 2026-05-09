@@ -95,7 +95,7 @@ const todosLosProductos = ref([
   { id: 1, nombre: 'Hamburguesa Especial', precio: 18000, cat: 'comida', img: 'https://s3yuumiproduction.s3.us-east-2.amazonaws.com/9a8c18d2-a458-477d-adab-a5f00495d7e2_eea23bb78e.webp' },
   { id: 2, nombre: 'Perro Caliente Suizo', precio: 14000, cat: 'comida', img: 'https://adrianagibbs.com/wp-content/uploads/2017/09/LaCasaBistro.jpg' },
   { id: 3, nombre: 'Salchipapa Mediana', precio: 15000, cat: 'comida', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Lima_salchipapas.jpg/1280px-Lima_salchipapas.jpg' },
-  { id: 4, nombre: 'Pizza Hawaiana (Porción)', precio: 7000, cat: 'comida', img: 'https://irecetasfaciles.com/wp-content/uploads/2020/03/pizza-hawaiana.jpg' },
+  { id: 4, nombre: 'Pizza Hawaiana (Porción)', precio: 50000, cat: 'comida', img: 'https://irecetasfaciles.com/wp-content/uploads/2020/03/pizza-hawaiana.jpg' },
   { id: 5, nombre: 'Sandwich de Pollo', precio: 12000, cat: 'comida', img: 'https://www.recetasnestlecam.com/sites/default/files/srh_recipes/c5ad0cfe9d4beb9d633c9709113a1452.jpg' },
   { id: 6, nombre: 'Burrito de Carne', precio: 19000, cat: 'comida', img: 'https://cloudfront-us-east-1.images.arcpublishing.com/infobae/LL7KGOM7VZFPZP4I6NCWUYZPUQ.jpg' },
   { id: 7, nombre: 'Tacos al Pastor', precio: 22000, cat: 'comida', img: 'https://cdn.colombia.com/gastronomia/2011/09/29/tacos-al-pastor-3634.jpg' },
