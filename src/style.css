@@ -1,0 +1,7 @@
+/* RESET GLOBAL */
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  background: #000;
+  
+}
