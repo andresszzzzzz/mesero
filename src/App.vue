@@ -1,4 +1,5 @@
 <template>
+  <!-- LOADING -->
   <div v-if="loading" class="overlay-pantalla-completa">
     <div class="contenedor-spinner">
       <div class="spinner-imagen"></div>
@@ -7,22 +8,29 @@
   </div>
 
   <div class="app-container">
+
+    <!-- HEADER -->
     <header class="header-principal">
-      <h1>RESTAURANTE EL CHEF</h1>
+      <h1>🍽 RESTAURANTE EL CHEF</h1>
       <p>San Gil, Santander</p>
     </header>
 
-    <!-- PANEL PARA AGREGAR PRODUCTOS NUEVOS -->
-    <section class="admin-panel">
-      <h3>➕ Panel Administrativo: Agregar a la Carta</h3>
+    <!-- BOTÓN ADMIN -->
+    <button class="btn-toggle-admin" v-on:click="mostrarAdmin = !mostrarAdmin">
+      ➕ Agregar Producto
+    </button>
+
+    <!-- PANEL ADMIN -->
+    <section v-if="mostrarAdmin" class="admin-panel">
+      <h3>Panel Administrativo</h3>
       <div class="form-nuevo-producto">
         <div class="campo">
-          <label>Nombre del plato</label>
-          <input v-model="nuevoProd.nombre" type="text" placeholder="Ej: Pizza Personal">
+          <label>Nombre</label>
+          <input v-model="nuevoProd.nombre" type="text" placeholder="Pizza Personal">
         </div>
         <div class="campo">
-          <label>Precio ($)</label>
-          <input v-model.number="nuevoProd.precio" type="number" placeholder="Ej: 15000">
+          <label>Precio</label>
+          <input v-model.number="nuevoProd.precio" type="number" placeholder="15000">
         </div>
         <div class="campo">
           <label>Categoría</label>
@@ -33,57 +41,61 @@
           </select>
         </div>
         <div class="campo">
-          <label>Stock Inicial</label>
+          <label>Stock</label>
           <input v-model.number="nuevoProd.stock" type="number">
         </div>
-        <div class="campo larga">
-          <label>URL de la Imagen</label>
-          <input v-model="nuevoProd.img" type="text" placeholder="https://imagen.com/foto.jpg">
+        <div class="campo">
+          <label>URL Imagen</label>
+          <input v-model="nuevoProd.img" type="text" placeholder="https://...">
         </div>
-        <button v-on:click="crearProducto" class="btn-crear">Guardar Producto</button>
+        <button class="btn-crear" v-on:click="crearProducto">
+          Guardar Producto
+        </button>
       </div>
     </section>
 
+    <!-- FILTROS -->
     <nav class="filtros">
-      <button v-on:click="filtrar('todos')" :class="{ activo: categoriaActual === 'todos' }">Todos</button>
-      <button v-on:click="filtrar('comida')" :class="{ activo: categoriaActual === 'comida' }">🍔 Comida</button>
-      <button v-on:click="filtrar('bebida')" :class="{ activo: categoriaActual === 'bebida' }">🥤 Bebidas</button>
-      <button v-on:click="filtrar('almuerzo')" :class="{ activo: categoriaActual === 'almuerzo' }">🍲 Almuerzos</button>
+      <button v-on:click="filtrar('todos')">Todos</button>
+      <button v-on:click="filtrar('comida')">🍔 Comida</button>
+      <button v-on:click="filtrar('bebida')">🥤 Bebidas</button>
+      <button v-on:click="filtrar('almuerzo')">🍲 Almuerzos</button>
     </nav>
 
+    <!-- BOTÓN CARRITO MOBILE -->
+    <button class="btn-carrito-mobile" v-on:click="mostrarCarrito = true">
+      🛒 <span class="contador-carrito">{{ carrito.length }}</span>
+    </button>
+
+    <!-- OVERLAY -->
+    <div v-if="mostrarCarrito" class="overlay-carrito" v-on:click="mostrarCarrito = false"></div>
+
+    <!-- MAIN -->
     <div class="main-content">
+      <!-- PRODUCTOS -->
       <section class="grid-productos">
         <div v-for="p in productosVisibles" :key="p.id" class="card">
           <div class="card-img-container">
-            <img v-if="p.img" :src="p.img" alt="producto">
-            <div v-else class="img-placeholder">Sin Imagen</div>
-            <div :class="['badge-stock', p.stock < 5 ? 'bajo' : 'alto']">
-              {{ p.stock }} disp.
-            </div>
+            <img :src="p.img" alt="producto">
+            <div class="badge-stock">{{ p.stock }} disp.</div>
           </div>
           <div class="card-info">
             <h3 class="producto-nombre">{{ p.nombre }}</h3>
-            <div class="stock-container">
-              <div class="stock-bar-bg">
-                <div class="stock-bar-fill"
-                  :style="{ width: (p.stock * 100 / p.stockMax) + '%', backgroundColor: p.stock < 5 ? '#ff4d4d' : '#00ff88' }">
-                </div>
-              </div>
-            </div>
-            <div class="card-footer-action">
-              <p class="precio">${{ p.precio.toLocaleString() }}</p>
-              <button class="btn-add" v-on:click="agregarAlCarrito(p)" :disabled="p.stock === 0">
-                {{ p.stock > 0 ? 'Añadir' : 'Agotado' }}
-              </button>
-            </div>
+            <p class="precio">${{ p.precio.toLocaleString() }}</p>
+            <button class="btn-add" v-on:click="agregarAlCarrito(p)" :disabled="p.stock === 0">
+              Añadir
+            </button>
           </div>
         </div>
       </section>
 
+      <!-- CARRITO -->
       <aside class="carrito-sidebar">
-        <h2>🛍️ Pedido</h2>
-        <div v-if="carrito.length === 0" class="empty-state">No hay productos seleccionados.</div>
-        <div v-else>
+        <h2>🛍 Pedido</h2>
+        <div v-if="carrito.length === 0" class="empty-state">
+          No hay productos seleccionados.
+        </div>
+        <div v-if="carrito.length > 0">
           <div v-for="item in carritoAgrupado" :key="item.id" class="item-carrito">
             <div class="item-info">
               <span class="item-cantidad">{{ item.cantidad }}x</span>
@@ -92,8 +104,7 @@
             <div class="item-controles">
               <strong>${{ (item.precio * item.cantidad).toLocaleString() }}</strong>
               <div class="botones-accion">
-                <button class="btn-control add" v-on:click="agregarMas(item.id)"
-                  :disabled="obtenerStockProducto(item.id) === 0">+</button>
+                <button class="btn-control add" v-on:click="agregarMas(item.id)">+</button>
                 <button class="btn-control remove" v-on:click="eliminarDelCarrito(item.id)">×</button>
               </div>
             </div>
@@ -101,41 +112,85 @@
           <div class="total-seccion">
             <hr>
             <h3>Total: ${{ totalFactura.toLocaleString() }}</h3>
-            <button class="btn-pay" v-on:click="procesarPedidoCompleto">Pagar Ahora</button>
+            <button class="btn-pay" v-on:click="procesarPedidoCompleto">💳 Pagar Ahora</button>
           </div>
         </div>
       </aside>
     </div>
 
     <!-- MODAL FACTURA -->
-    <div v-if="mostrarFactura" class="modal-factura">
-      <div class="ticket">
-        <div class="ticket-header">
-          <h2>RESTAURANTE EL CHEF</h2>
-          <p>San Gil, Santander</p>
-          <p>Fecha: 08/05/2026</p>
-        </div>
-        <div class="ticket-body">
-          <div v-for="item in carritoAgrupado" :key="item.id" class="ticket-line-punteada">
-            <span>{{ item.cantidad }}x {{ item.nombre }}</span>
-            <span>${{ (item.precio * item.cantidad).toLocaleString() }}</span>
+    <div v-if="mostrarFactura" class="modal-factura-overlay">
+      <div class="modal-factura-contenedor">
+
+        <button class="btn-cerrar-modal" v-on:click="nuevaCompra">✖</button>
+
+        <div class="factura-real" id="facturaPDF">
+          <!-- HEADER -->
+          <div class="factura-top">
+            <h2>🍽 RESTAURANTE EL CHEF</h2>
+            <p>San Gil, Santander</p>
+            <p>Fecha: 22/5/2026</p>
+          </div>
+
+          <!-- TOTAL -->
+          <div class="factura-total-box">
+            <span>TOTAL</span>
+            <strong>${{ totalFactura.toLocaleString() }}</strong>
+          </div>
+
+          <!-- TABLA -->
+          <div class="factura-tabla">
+            <div class="tabla-header">
+              <span>Producto</span>
+              <span>Cant.</span>
+              <span>Precio</span>
+            </div>
+            <div v-for="item in carritoAgrupado" :key="item.id" class="tabla-item">
+              <span>{{ item.nombre }}</span>
+              <span>{{ item.cantidad }}</span>
+              <span>${{ (item.precio * item.cantidad).toLocaleString() }}</span>
+            </div>
           </div>
         </div>
-        <div class="total-line-final">
-          <span>TOTAL:</span>
-          <span>${{ totalFactura.toLocaleString() }}</span>
+
+        <!-- ACCIONES -->
+        <div class="modal-acciones">
+          <button class="btn-descargar-factura" v-on:click="descargarFacturaPDF">
+            📄 Descargar Factura PDF
+          </button>
+          <button class="btn-nueva-compra" v-on:click="nuevaCompra">
+            Terminar y Limpiar
+          </button>
         </div>
-        <button class="btn-download" v-on:click="descargarFactura">📥 Descargar Factura</button>
-        <button class="btn-close" v-on:click="nuevaCompra">Nueva Compra</button>
+
       </div>
     </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
+import html2pdf from 'html2pdf.js';
 
-// --- LISTA COMPLETA DE PRODUCTOS ---
+const carrito = ref([]);
+const categoriaActual = ref('todos');
+const loading = ref(false);
+const mostrarAdmin = ref(false);
+const mostrarCarrito = ref(false);
+const mostrarFactura = ref(false);
+const productosVisibles = ref([]);
+const carritoAgrupado = ref([]);
+const totalFactura = ref(0);
+
+const nuevoProd = ref({
+  nombre: '',
+  precio: null,
+  cat: 'comida',
+  stock: 10,
+  img: ''
+});
+
 const todosLosProductos = ref([
   { id: 1, nombre: 'Hamburguesa Especial', precio: 18000, cat: 'comida', stock: 10, stockMax: 10, img: 'https://s3yuumiproduction.s3.us-east-2.amazonaws.com/9a8c18d2-a458-477d-adab-a5f00495d7e2_eea23bb78e.webp' },
   { id: 2, nombre: 'Perro Caliente Suizo', precio: 14000, cat: 'comida', stock: 8, stockMax: 8, img: 'https://adrianagibbs.com/wp-content/uploads/2017/09/LaCasaBistro.jpg' },
@@ -179,47 +234,60 @@ const todosLosProductos = ref([
   { id: 40, nombre: 'Cazuela Mariscos', precio: 35000, cat: 'almuerzo', stock: 5, stockMax: 5, img: 'https://elrinconcolombiano.com/wp-content/uploads/2023/06/Cazuela-de-Mariscos-receta-colombiana.jpg' }
 ]);
 
-const carrito = ref([]);
-const categoriaActual = ref('todos');
-const loading = ref(false);
-const mostrarFactura = ref(false);
+/* =======================================================
+   FUNCIONES DE ACTUALIZACIÓN MANUAL 
+   ======================================================= */
+const actualizarProductosVisibles = () => {
+  if (categoriaActual.value === 'todos') {
+    productosVisibles.value = todosLosProductos.value;
+  } else {
+    productosVisibles.value = todosLosProductos.value.filter(p => p.cat === categoriaActual.value);
+  }
+};
 
-const nuevoProd = ref({
-  nombre: '',
-  precio: null,
-  cat: 'comida',
-  stock: 10,
-  img: ''
-});
+const actualizarCarritoYTotal = () => {
+  // 1. Calcular Total de la Factura
+  totalFactura.value = carrito.value.reduce((acc, item) => acc + item.precio, 0);
 
-const productosVisibles = computed(() => {
-  if (categoriaActual.value === 'todos') return todosLosProductos.value;
-  return todosLosProductos.value.filter(p => p.cat === categoriaActual.value);
-});
-
-const totalFactura = computed(() => carrito.value.reduce((acc, item) => acc + item.precio, 0));
-
-const carritoAgrupado = computed(() => {
+  // 2. Agrupar Productos del Carrito
   const grupos = {};
   carrito.value.forEach(item => {
-    if (!grupos[item.id]) grupos[item.id] = { ...item, cantidad: 0 };
+    if (!grupos[item.id]) {
+      grupos[item.id] = { ...item, cantidad: 0 };
+    }
     grupos[item.id].cantidad++;
   });
-  return Object.values(grupos);
-});
+  carritoAgrupado.value = Object.values(grupos);
+};
 
-const filtrar = (cat) => categoriaActual.value = cat;
+// Inicializamos los productos visibles al cargar el componente
+actualizarProductosVisibles();
+
+/* =======================================================
+   MÉTODOS DE LA APLICACIÓN
+   ======================================================= */
+const filtrar = (cat) => {
+  categoriaActual.value = cat;
+  actualizarProductosVisibles();
+};
 
 const agregarAlCarrito = (p) => {
   if (p.stock > 0) {
     p.stock--;
-    carrito.value.push({ id: p.id, nombre: p.nombre, precio: p.precio });
+    carrito.value.push({
+      id: p.id,
+      nombre: p.nombre,
+      precio: p.precio
+    });
+    actualizarCarritoYTotal();
   }
 };
 
 const agregarMas = (id) => {
   const p = todosLosProductos.value.find(prod => prod.id === id);
-  if (p) agregarAlCarrito(p);
+  if (p) {
+    agregarAlCarrito(p);
+  }
 };
 
 const eliminarDelCarrito = (id) => {
@@ -227,15 +295,16 @@ const eliminarDelCarrito = (id) => {
   if (index !== -1) {
     carrito.value.splice(index, 1);
     const p = todosLosProductos.value.find(prod => prod.id === id);
-    if (p) p.stock++;
+    if (p) {
+      p.stock++;
+    }
+    actualizarCarritoYTotal();
   }
 };
 
-const obtenerStockProducto = (id) => todosLosProductos.value.find(p => p.id === id)?.stock || 0;
-
 const crearProducto = () => {
   if (!nuevoProd.value.nombre || !nuevoProd.value.precio) {
-    alert("Por favor llena el nombre y el precio");
+    alert('Llena nombre y precio');
     return;
   }
 
@@ -246,124 +315,177 @@ const crearProducto = () => {
     cat: nuevoProd.value.cat,
     stock: nuevoProd.value.stock,
     stockMax: nuevoProd.value.stock,
-    img: nuevoProd.value.img || 'https://via.placeholder.com/150'
+    img: nuevoProd.value.img || 'https://via.placeholder.com/300'
   });
 
   nuevoProd.value = { nombre: '', precio: null, cat: 'comida', stock: 10, img: '' };
+  mostrarAdmin.value = false;
+  actualizarProductosVisibles();
 };
 
 const procesarPedidoCompleto = () => {
+  if (carrito.value.length === 0) {
+    alert('No hay productos en el carrito');
+    return;
+  }
   loading.value = true;
   setTimeout(() => {
     loading.value = false;
     mostrarFactura.value = true;
+    mostrarCarrito.value = false;
   }, 1500);
 };
 
 const nuevaCompra = () => {
   carrito.value = [];
+  actualizarCarritoYTotal();
   mostrarFactura.value = false;
 };
 
-const descargarFactura = () => {
-  let txt = `RESTAURANTE EL CHEF\nTOTAL: $${totalFactura.value}`;
-  const blob = new Blob([txt], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'factura.txt';
-  a.click();
+const descargarFacturaPDF = () => {
+  const elemento = document.getElementById('facturaPDF');
+  if (!elemento) return;
+
+  const opciones = {
+    margin: 10,
+    filename: 'Factura_Chef.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opciones).from(elemento).save();
 };
 </script>
 
 <style scoped>
-/* --- CONFIGURACIÓN BASE --- */
+/* =======================================================
+   ESTILOS CSS (Permanecen intactos y limpios)
+   ======================================================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #000;
+}
+
 .app-container {
   background: #000;
   color: #fff;
   min-height: 100vh;
-  padding: 10px;
-  /* Reducido para ganar espacio */
+  padding: 15px;
   font-family: 'Segoe UI', sans-serif;
 }
 
 .header-principal {
   text-align: center;
+  margin-bottom: 25px;
+}
+
+.header-principal h1 {
   color: #ff0000;
+  font-size: 2rem;
+  margin-bottom: 5px;
+}
+
+.header-principal p {
+  color: #aaa;
+}
+
+.btn-toggle-admin {
+  width: 100%;
+  background: linear-gradient(135deg, #ff0000, #b30000);
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 15px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
   margin-bottom: 20px;
 }
 
-/* --- PANEL ADMIN (Colapsable/Compacto en móvil) --- */
 .admin-panel {
   background: #111;
-  padding: 15px;
-  border-radius: 12px;
-  border: 1px dashed #ff0000;
-  margin-bottom: 20px;
+  border: 1px solid #ff0000;
+  border-radius: 18px;
+  padding: 22px;
+  margin-bottom: 25px;
 }
 
 .form-nuevo-producto {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.campo {
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
 .campo input,
 .campo select {
-  background: #222;
-  border: 1px solid #444;
-  color: #fff;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 16px;
+  background: #1c1c1c;
+  border: 1px solid #333;
+  color: white;
+  padding: 14px;
+  border-radius: 12px;
 }
 
-/* --- FILTROS (Scroll suave) --- */
+.btn-crear {
+  background: linear-gradient(135deg, #ff0000, #b30000);
+  border: none;
+  color: white;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
 .filtros {
   display: flex;
-  overflow-x: auto;
-  gap: 8px;
-  margin-bottom: 20px;
-  padding-bottom: 5px;
+  gap: 10px;
+  margin-bottom: 25px;
 }
 
 .filtros button {
   background: #1a1a1a;
-  color: #fff;
+  color: white;
   border: 1px solid #ff0000;
-  padding: 8px 15px;
-  border-radius: 20px;
-  white-space: nowrap;
-  font-size: 0.9rem;
+  padding: 10px 18px;
+  border-radius: 25px;
+  cursor: pointer;
 }
 
-/* --- GRID DE PRODUCTOS (CORREGIDO) --- */
 .main-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  width: 100%;
 }
 
 .grid-productos {
   display: grid;
-  /* Esto asegura que en pantallas pequeñas use todo el ancho con 2 columnas */
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
-  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
 }
 
-/* --- TARJETAS (Ajustadas para no verse estiradas) --- */
 .card {
-  background: #111;
+  background: #0f0f0f;
   border: 1px solid #222;
-  border-radius: 12px;
+  border-radius: 18px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 380px;
 }
 
 .card-img-container {
-  height: 120px;
+  width: 100%;
+  height: 180px;
   position: relative;
 }
 
@@ -375,65 +497,70 @@ const descargarFactura = () => {
 
 .badge-stock {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  font-size: 0.6rem;
-  padding: 2px 6px;
-  border-radius: 4px;
+  top: 10px;
+  right: 10px;
   background: #00ff88;
   color: #000;
+  padding: 6px 10px;
+  border-radius: 12px;
   font-weight: bold;
+  font-size: 0.8rem;
 }
 
 .card-info {
-  padding: 10px;
-  flex-grow: 1;
+  padding: 15px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  flex: 1;
 }
 
 .producto-nombre {
-  font-size: 0.85rem;
-  margin-bottom: 8px;
+  font-size: 1.05rem;
   text-align: center;
-  font-weight: bold;
-}
-
-.stock-bar-bg {
-  background: #222;
-  height: 4px;
-  border-radius: 10px;
   margin-bottom: 10px;
 }
 
 .precio {
   color: #ff0000;
+  font-size: 1.4rem;
   font-weight: bold;
-  font-size: 1rem;
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: 15px;
 }
 
 .btn-add {
-  background: #ff0000;
+  width: 100%;
+  background: linear-gradient(135deg, #ff0000, #c00000);
   border: none;
-  padding: 8px;
-  border-radius: 6px;
-  color: #fff;
+  padding: 13px;
+  border-radius: 14px;
+  color: white;
   font-weight: bold;
-  font-size: 0.9rem;
+  cursor: pointer;
 }
 
-/* --- CARRITO --- */
 .carrito-sidebar {
   background: #111;
-  padding: 15px;
+  padding: 20px;
   border: 1px solid #ff0000;
-  border-radius: 12px;
-  width: 100%;
-  /* Ocupa todo el ancho en móvil */
-  box-sizing: border-box;
+  border-radius: 18px;
+}
+
+.item-carrito {
+  margin-bottom: 15px;
+  border-bottom: 1px solid #222;
+  padding-bottom: 10px;
+}
+
+.item-info {
+  margin-bottom: 5px;
+}
+
+.item-cantidad {
+  color: #00ff88;
+  font-weight: bold;
+  margin-right: 5px;
 }
 
 .item-controles {
@@ -442,12 +569,18 @@ const descargarFactura = () => {
   align-items: center;
 }
 
+.botones-accion {
+  display: flex;
+  gap: 5px;
+}
+
 .btn-control {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
   border: none;
+  border-radius: 5px;
   font-weight: bold;
+  cursor: pointer;
 }
 
 .btn-control.add {
@@ -459,43 +592,145 @@ const descargarFactura = () => {
   color: #ff4d4d;
 }
 
-/* --- MEDIA QUERIES PARA PC --- */
-@media (min-width: 768px) {
-  .main-content {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-
-  .grid-productos {
-    flex: 3;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  }
-
-  .carrito-sidebar {
-    flex: 1;
-    position: sticky;
-    top: 20px;
-  }
-
-  .form-nuevo-producto {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .campo {
-    flex: 1;
-    min-width: 150px;
-  }
+.total-seccion h3 {
+  margin: 15px 0;
 }
 
-/* SPINNER */
+.btn-pay {
+  width: 100%;
+  background: linear-gradient(135deg, #00c853, #009624);
+  border: none;
+  padding: 14px;
+  border-radius: 14px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.modal-factura-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.modal-factura-contenedor {
+  background: #111;
+  border: 2px solid #ff0000;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 380px;
+  padding: 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.btn-cerrar-modal {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.btn-cerrar-modal:hover {
+  color: #ff0000;
+}
+
+.factura-real {
+  background: #fff;
+  color: #000;
+  border-radius: 10px;
+  padding: 15px;
+  font-family: monospace;
+}
+
+.factura-top {
+  text-align: center;
+  margin-bottom: 10px;
+  border-bottom: 1px dashed #333;
+  padding-bottom: 10px;
+}
+
+.factura-top h2 {
+  font-size: 1.1rem;
+}
+
+.factura-top p {
+  font-size: 0.8rem;
+}
+
+.factura-total-box {
+  background: #000;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-radius: 5px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.factura-tabla {
+  font-size: 0.85rem;
+}
+
+.tabla-header,
+.tabla-item {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  text-align: right;
+  margin-bottom: 5px;
+}
+
+.tabla-header {
+  font-weight: bold;
+  border-bottom: 1px solid #000;
+}
+
+.tabla-header span:first-child,
+.tabla-item span:first-child {
+  text-align: left;
+}
+
+.modal-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-descargar-factura {
+  background: #ff0000;
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-nueva-compra {
+  background: #222;
+  color: #ccc;
+  border: 1px solid #444;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
 .overlay-pantalla-completa {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.9);
+  inset: 0;
+  background: rgba(0, 0, 0, .9);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -503,10 +738,10 @@ const descargarFactura = () => {
 }
 
 .spinner-imagen {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #222;
-  border-top: 4px solid #ff0000;
+  width: 55px;
+  height: 55px;
+  border: 5px solid #222;
+  border-top: 5px solid #ff0000;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -515,5 +750,40 @@ const descargarFactura = () => {
   to {
     transform: rotate(360deg);
   }
+}
+
+@media(max-width:800px) {
+  .grid-productos {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .card {
+    min-height: 350px;
+  }
+
+  .card-img-container {
+    height: 130px;
+  }
+}
+
+@media(min-width:801px) {
+  .main-content {
+    flex-direction: row;
+  }
+
+  .grid-productos {
+    flex: 3;
+  }
+
+  .carrito-sidebar {
+    flex: 1;
+    position: sticky;
+    top: 20px;
+  }
+}
+
+.btn-carrito-mobile {
+  display: none;
 }
 </style>
