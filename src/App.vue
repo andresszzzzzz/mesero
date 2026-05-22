@@ -171,7 +171,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import html2pdf from 'html2pdf.js';
+import * as html2pdf from 'html2pdf.js';
 
 const carrito = ref([]);
 const categoriaActual = ref('todos');
