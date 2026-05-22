@@ -171,7 +171,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import * as html2pdf from 'html2pdf.js';
+import { jsPDF } from 'jspdf';
 
 const carrito = ref([]);
 const categoriaActual = ref('todos');
@@ -346,15 +346,23 @@ const descargarFacturaPDF = () => {
   const elemento = document.getElementById('facturaPDF');
   if (!elemento) return;
 
-  const opciones = {
-    margin: 10,
-    filename: 'Factura_Chef.pdf',
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
+  // Creamos la instancia de jsPDF en formato A4
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
 
-  html2pdf().set(opciones).from(elemento).save();
+  // Usamos el método nativo para convertir el HTML a PDF
+  doc.html(elemento, {
+    callback: function (docOutput) {
+      docOutput.save('Factura_Chef.pdf');
+    },
+    x: 10,
+    y: 10,
+    width: 190, // Margen de seguridad para que se adapte al ancho del A4
+    windowWidth: 380 // Mantiene la escala del diseño de tu modal móvil
+  });
 };
 </script>
 
