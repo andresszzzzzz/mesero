@@ -89,9 +89,12 @@
         </div>
       </section>
 
-      <!-- CARRITO -->
-      <aside class="carrito-sidebar">
-        <h2>🛍 Pedido</h2>
+      <!-- CARRITO (Ahora responde a la clase dinámica en móvil) -->
+      <aside class="carrito-sidebar" :class="{ 'abierto-mobile': mostrarCarrito }">
+        <div class="header-carrito-mobile">
+          <h2>🛍 Pedido</h2>
+          <button class="btn-cerrar-carrito" v-on:click="mostrarCarrito = false">✖</button>
+        </div>
         <div v-if="carrito.length === 0" class="empty-state">
           No hay productos seleccionados.
         </div>
@@ -213,7 +216,7 @@ const todosLosProductos = ref([
   { id: 19, nombre: 'Cerveza Águila', precio: 5500, cat: 'bebida', stock: 24, stockMax: 24, img: 'https://drinkcentral.co/wp-content/uploads/2023/03/CERVEZA-AGUILA-LATA-330ml.webp' },
   { id: 20, nombre: 'Cerveza Corona', precio: 9500, cat: 'bebida', stock: 18, stockMax: 18, img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSSUvV1MOQYN3QFuHnmTtdi2vJdqhrW8b0hYQ&s' },
   { id: 21, nombre: 'Té Helado', precio: 8000, cat: 'bebida', stock: 15, stockMax: 15, img: 'https://cdn7.kiwilimon.com/recetaimagen/3613/640x640/18285.jpg.jpg' },
-  { id: 22, nombre: 'Malteada Vainilla', precio: 12500, cat: 'bebida', stock: 10, stockMax: 10, img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaKhwJqcZbxi9EYLu7t_d7Lsf6C8-dmT8VCg&s' },
+  { id: 22, module: 'Malteada Vainilla', nombre: 'Malteada Vainilla', precio: 12500, cat: 'bebida', stock: 10, stockMax: 10, img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaKhwJqcZbxi9EYLu7t_d7Lsf6C8-dmT8VCg&s' },
   { id: 23, nombre: 'Café Americano', precio: 4000, cat: 'bebida', stock: 30, stockMax: 30, img: 'https://imag.bonviveur.com/cafe-americano-en-la-taza.jpg' },
   { id: 24, nombre: 'Capuccino', precio: 6500, cat: 'bebida', stock: 20, stockMax: 20, img: 'https://www.allrecipes.com/thmb/chsZz0jqIHWYz39ViZR-9k_BkkE=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/8624835-how-to-make-a-cappuccino-beauty-4x3-0301-13d55eaad60b42058f24369c292d4ccb.jpg' },
   { id: 25, nombre: 'Soda Saborizada', precio: 8500, cat: 'bebida', stock: 22, stockMax: 22, img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQoCqrFaXU3lMe7Mgt-8hEoSt97Y0OLr6d33Q&s' },
@@ -234,9 +237,6 @@ const todosLosProductos = ref([
   { id: 40, nombre: 'Cazuela Mariscos', precio: 35000, cat: 'almuerzo', stock: 5, stockMax: 5, img: 'https://elrinconcolombiano.com/wp-content/uploads/2023/06/Cazuela-de-Mariscos-receta-colombiana.jpg' }
 ]);
 
-/* =======================================================
-   FUNCIONES DE ACTUALIZACIÓN MANUAL 
-   ======================================================= */
 const actualizarProductosVisibles = () => {
   if (categoriaActual.value === 'todos') {
     productosVisibles.value = todosLosProductos.value;
@@ -246,10 +246,8 @@ const actualizarProductosVisibles = () => {
 };
 
 const actualizarCarritoYTotal = () => {
-  // 1. Calcular Total de la Factura
   totalFactura.value = carrito.value.reduce((acc, item) => acc + item.precio, 0);
 
-  // 2. Agrupar Productos del Carrito
   const grupos = {};
   carrito.value.forEach(item => {
     if (!grupos[item.id]) {
@@ -260,12 +258,8 @@ const actualizarCarritoYTotal = () => {
   carritoAgrupado.value = Object.values(grupos);
 };
 
-// Inicializamos los productos visibles al cargar el componente
 actualizarProductosVisibles();
 
-/* =======================================================
-   MÉTODOS DE LA APLICACIÓN
-   ======================================================= */
 const filtrar = (cat) => {
   categoriaActual.value = cat;
   actualizarProductosVisibles();
@@ -346,30 +340,25 @@ const descargarFacturaPDF = () => {
   const elemento = document.getElementById('facturaPDF');
   if (!elemento) return;
 
-  // Creamos la instancia de jsPDF en formato A4
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4'
   });
 
-  // Usamos el método nativo para convertir el HTML a PDF
   doc.html(elemento, {
     callback: function (docOutput) {
       docOutput.save('Factura_Chef.pdf');
     },
     x: 10,
     y: 10,
-    width: 190, // Margen de seguridad para que se adapte al ancho del A4
-    windowWidth: 380 // Mantiene la escala del diseño de tu modal móvil
+    width: 190,
+    windowWidth: 380
   });
 };
 </script>
 
 <style scoped>
-/* =======================================================
-   ESTILOS CSS (Permanecen intactos y limpios)
-   ======================================================= */
 * {
   margin: 0;
   padding: 0;
@@ -760,6 +749,71 @@ body {
   }
 }
 
+/* =======================================================
+   NUEVOS AJUSTES RESPONSIVE (Modificados y añadidos)
+   ======================================================= */
+
+/* Estilos base del botón flotante y overlay del carrito (ocultos por defecto) */
+.btn-carrito-mobile {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #00c853, #009624);
+  color: white;
+  border: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  z-index: 999;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  align-items: center;
+  justify-content: center;
+}
+
+.contador-carrito {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ff0000;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: bold;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #000;
+}
+
+.overlay-carrito {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 998;
+}
+
+.header-carrito-mobile {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.btn-cerrar-carrito {
+  background: transparent;
+  border: none;
+  color: #ff4d4d;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: none; /* Solo se verá en móvil */
+}
+
+/* DE 800PX HACIA ABAJO: Activamos el Carrito Lateral Desplegable */
 @media(max-width:800px) {
   .grid-productos {
     grid-template-columns: repeat(2, 1fr);
@@ -772,6 +826,56 @@ body {
 
   .card-img-container {
     height: 130px;
+  }
+
+  /* Mostramos el botón flotante del carrito */
+  .btn-carrito-mobile {
+    display: flex;
+  }
+
+  .btn-cerrar-carrito {
+    display: block;
+  }
+
+  /* Transformamos el sidebar en un panel lateral oculto */
+  .carrito-sidebar {
+    position: fixed;
+    top: 0;
+    right: -100%; /* Totalmente oculto a la derecha */
+    width: 85%;
+    max-width: 340px;
+    height: 100vh;
+    z-index: 999;
+    border-radius: 20px 0 0 20px;
+    border-y: none;
+    border-right: none;
+    transition: right 0.3s ease-in-out;
+    overflow-y: auto;
+    box-shadow: -5px 0 25px rgba(0,0,0,0.8);
+  }
+
+  /* Clase que activa Vue para mostrarlo */
+  .carrito-sidebar.abierto-mobile {
+    right: 0;
+  }
+}
+
+/* DE 400PX HACIA ABAJO: Categorías en 2 y 2 sin scroll */
+@media(max-width:400px) {
+  .filtros {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Fuerza cuadrícula de 2x2 */
+    gap: 10px;
+  }
+
+  .filtros button {
+    width: 100%;
+    text-align: center;
+    padding: 10px 5px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
@@ -789,9 +893,5 @@ body {
     position: sticky;
     top: 20px;
   }
-}
-
-.btn-carrito-mobile {
-  display: none;
 }
 </style>
