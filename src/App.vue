@@ -7,6 +7,11 @@
     </div>
   </div>
 
+  <!-- AVISO / ALERTA PERSONALIZADA IN-APP -->
+  <div v-if="mensajeAlerta" class="alerta-personalizada">
+    <p>{{ mensajeAlerta }}</p>
+  </div>
+
   <div class="app-container">
 
     <!-- HEADER -->
@@ -77,19 +82,23 @@
         <div v-for="p in productosVisibles" :key="p.id" class="card">
           <div class="card-img-container">
             <img :src="p.img" alt="producto">
-            <div class="badge-stock">{{ p.stock }} disp.</div>
+            <!-- Cambia el color del badge si no hay stock -->
+            <div class="badge-stock" :class="{ 'sin-stock': p.stock === 0 }">
+              {{ p.stock > 0 ? p.stock + ' disp.' : 'Agotado' }}
+            </div>
           </div>
           <div class="card-info">
             <h3 class="producto-nombre">{{ p.nombre }}</h3>
             <p class="precio">${{ p.precio.toLocaleString() }}</p>
-            <button class="btn-add" v-on:click="agregarAlCarrito(p)" :disabled="p.stock === 0">
-              Añadir
+            <!-- Deshabilita el botón de añadir si el stock es menor o igual a 0 -->
+            <button class="btn-add" v-on:click="agregarAlCarrito(p)" :disabled="p.stock <= 0">
+              {{ p.stock <= 0 ? 'Agotado' : 'Añadir' }}
             </button>
           </div>
         </div>
       </section>
 
-      <!-- CARRITO (Ahora responde a la clase dinámica en móvil) -->
+      <!-- CARRITO -->
       <aside class="carrito-sidebar" :class="{ 'abierto-mobile': mostrarCarrito }">
         <div class="header-carrito-mobile">
           <h2>🛍 Pedido</h2>
@@ -107,7 +116,8 @@
             <div class="item-controles">
               <strong>${{ (item.precio * item.cantidad).toLocaleString() }}</strong>
               <div class="botones-accion">
-                <button class="btn-control add" v-on:click="agregarMas(item.id)">+</button>
+                <!-- Deshabilita el botón + en el carrito si el stock global ya es 0 -->
+                <button class="btn-control add" v-on:click="agregarMas(item.id)" :disabled="obtenerStockFisico(item.id) <= 0">+</button>
                 <button class="btn-control remove" v-on:click="eliminarDelCarrito(item.id)">×</button>
               </div>
             </div>
@@ -186,6 +196,9 @@ const productosVisibles = ref([]);
 const carritoAgrupado = ref([]);
 const totalFactura = ref(0);
 
+// Nueva variable para controlar los avisos en pantalla sin alerts
+const mensajeAlerta = ref('');
+
 const nuevoProd = ref({
   nombre: '',
   precio: null,
@@ -216,7 +229,7 @@ const todosLosProductos = ref([
   { id: 19, nombre: 'Cerveza Águila', precio: 5500, cat: 'bebida', stock: 24, stockMax: 24, img: 'https://drinkcentral.co/wp-content/uploads/2023/03/CERVEZA-AGUILA-LATA-330ml.webp' },
   { id: 20, nombre: 'Cerveza Corona', precio: 9500, cat: 'bebida', stock: 18, stockMax: 18, img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSSUvV1MOQYN3QFuHnmTtdi2vJdqhrW8b0hYQ&s' },
   { id: 21, nombre: 'Té Helado', precio: 8000, cat: 'bebida', stock: 15, stockMax: 15, img: 'https://cdn7.kiwilimon.com/recetaimagen/3613/640x640/18285.jpg.jpg' },
-  { id: 22, module: 'Malteada Vainilla', nombre: 'Malteada Vainilla', precio: 12500, cat: 'bebida', stock: 10, stockMax: 10, img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaKhwJqcZbxi9EYLu7t_d7Lsf6C8-dmT8VCg&s' },
+  { id: 22, nombre: 'Malteada Vainilla', precio: 12500, cat: 'bebida', stock: 10, stockMax: 10, img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTaKhwJqcZbxi9EYLu7t_d7Lsf6C8-dmT8VCg&s' },
   { id: 23, nombre: 'Café Americano', precio: 4000, cat: 'bebida', stock: 30, stockMax: 30, img: 'https://imag.bonviveur.com/cafe-americano-en-la-taza.jpg' },
   { id: 24, nombre: 'Capuccino', precio: 6500, cat: 'bebida', stock: 20, stockMax: 20, img: 'https://www.allrecipes.com/thmb/chsZz0jqIHWYz39ViZR-9k_BkkE=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/8624835-how-to-make-a-cappuccino-beauty-4x3-0301-13d55eaad60b42058f24369c292d4ccb.jpg' },
   { id: 25, nombre: 'Soda Saborizada', precio: 8500, cat: 'bebida', stock: 22, stockMax: 22, img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQoCqrFaXU3lMe7Mgt-8hEoSt97Y0OLr6d33Q&s' },
@@ -236,6 +249,20 @@ const todosLosProductos = ref([
   { id: 39, nombre: 'Ajiaco Bogotano', precio: 21000, cat: 'almuerzo', stock: 15, stockMax: 15, img: 'https://mojo.generalmills.com/api/public/content/lWuocevZmkK6Iq3JG_OZUw_gmi_hi_res_jpeg.jpeg?v=c23ac952&t=16e3ce250f244648bef28c5949fb99ff' },
   { id: 40, nombre: 'Cazuela Mariscos', precio: 35000, cat: 'almuerzo', stock: 5, stockMax: 5, img: 'https://elrinconcolombiano.com/wp-content/uploads/2023/06/Cazuela-de-Mariscos-receta-colombiana.jpg' }
 ]);
+
+// Helper para disparar alertas integradas que desaparecen solas
+const lanzarAlertaToast = (msg) => {
+  mensajeAlerta.value = msg;
+  setTimeout(() => {
+    mensajeAlerta.value = '';
+  }, 3000);
+};
+
+// Saber el stock en tiempo real para deshabilitar el botón '+' del carrito
+const obtenerStockFisico = (id) => {
+  const p = todosLosProductos.value.find(prod => prod.id === id);
+  return p ? p.stock : 0;
+};
 
 const actualizarProductosVisibles = () => {
   if (categoriaActual.value === 'todos') {
@@ -279,7 +306,7 @@ const agregarAlCarrito = (p) => {
 
 const agregarMas = (id) => {
   const p = todosLosProductos.value.find(prod => prod.id === id);
-  if (p) {
+  if (p && p.stock > 0) {
     agregarAlCarrito(p);
   }
 };
@@ -298,7 +325,7 @@ const eliminarDelCarrito = (id) => {
 
 const crearProducto = () => {
   if (!nuevoProd.value.nombre || !nuevoProd.value.precio) {
-    alert('Llena nombre y precio');
+    lanzarAlertaToast('⚠ Error: ¡Debes llenar el nombre y el precio del producto!');
     return;
   }
 
@@ -312,6 +339,9 @@ const crearProducto = () => {
     img: nuevoProd.value.img || 'https://via.placeholder.com/300'
   });
 
+  // Notificación in-app de éxito
+  lanzarAlertaToast(`✅ ¡Producto "${nuevoProd.value.nombre}" guardado con éxito!`);
+
   nuevoProd.value = { nombre: '', precio: null, cat: 'comida', stock: 10, img: '' };
   mostrarAdmin.value = false;
   actualizarProductosVisibles();
@@ -319,7 +349,7 @@ const crearProducto = () => {
 
 const procesarPedidoCompleto = () => {
   if (carrito.value.length === 0) {
-    alert('No hay productos en el carrito');
+    lanzarAlertaToast('🛒 El carrito está vacío. Añade productos antes de pagar.');
     return;
   }
   loading.value = true;
@@ -359,6 +389,9 @@ const descargarFacturaPDF = () => {
 </script>
 
 <style scoped>
+/* =======================================================
+   ESTILOS CSS (Ajustes de Stock y Alertas)
+   ======================================================= */
 * {
   margin: 0;
   padding: 0;
@@ -367,6 +400,29 @@ const descargarFacturaPDF = () => {
 
 body {
   background: #000;
+}
+
+/* Toast o Notificación in-app personalizada */
+.alerta-personalizada {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  border: 2px solid #ff0000;
+  color: #fff;
+  padding: 15px 30px;
+  border-radius: 12px;
+  font-weight: bold;
+  z-index: 10000;
+  box-shadow: 0 4px 20px rgba(255, 0, 0, 0.4);
+  text-align: center;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { top: -50px; opacity: 0; }
+  to { top: 20px; opacity: 1; }
 }
 
 .app-container {
@@ -504,6 +560,12 @@ body {
   font-size: 0.8rem;
 }
 
+/* Badge rojo cuando se agota */
+.badge-stock.sin-stock {
+  background: #ff0000;
+  color: #fff;
+}
+
 .card-info {
   padding: 15px;
   display: flex;
@@ -535,6 +597,14 @@ body {
   color: white;
   font-weight: bold;
   cursor: pointer;
+}
+
+/* Opacidad y cambio de cursor al deshabilitar el botón */
+.btn-add:disabled, .btn-control.add:disabled {
+  background: #222 !important;
+  color: #666 !important;
+  cursor: not-allowed;
+  border: 1px solid #333;
 }
 
 .carrito-sidebar {
@@ -749,11 +819,6 @@ body {
   }
 }
 
-/* =======================================================
-   NUEVOS AJUSTES RESPONSIVE (Modificados y añadidos)
-   ======================================================= */
-
-/* Estilos base del botón flotante y overlay del carrito (ocultos por defecto) */
 .btn-carrito-mobile {
   display: none;
   position: fixed;
@@ -810,10 +875,9 @@ body {
   color: #ff4d4d;
   font-size: 1.2rem;
   cursor: pointer;
-  display: none; /* Solo se verá en móvil */
+  display: none;
 }
 
-/* DE 800PX HACIA ABAJO: Activamos el Carrito Lateral Desplegable */
 @media(max-width:800px) {
   .grid-productos {
     grid-template-columns: repeat(2, 1fr);
@@ -828,7 +892,6 @@ body {
     height: 130px;
   }
 
-  /* Mostramos el botón flotante del carrito */
   .btn-carrito-mobile {
     display: flex;
   }
@@ -837,34 +900,29 @@ body {
     display: block;
   }
 
-  /* Transformamos el sidebar en un panel lateral oculto */
   .carrito-sidebar {
     position: fixed;
     top: 0;
-    right: -100%; /* Totalmente oculto a la derecha */
+    right: -100%;
     width: 85%;
     max-width: 340px;
     height: 100vh;
     z-index: 999;
     border-radius: 20px 0 0 20px;
-    border-y: none;
-    border-right: none;
     transition: right 0.3s ease-in-out;
     overflow-y: auto;
     box-shadow: -5px 0 25px rgba(0,0,0,0.8);
   }
 
-  /* Clase que activa Vue para mostrarlo */
   .carrito-sidebar.abierto-mobile {
     right: 0;
   }
 }
 
-/* DE 400PX HACIA ABAJO: Categorías en 2 y 2 sin scroll */
 @media(max-width:400px) {
   .filtros {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Fuerza cuadrícula de 2x2 */
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
 
